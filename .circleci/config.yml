@@ -10,8 +10,10 @@ jobs:
     working_directory: ~/sampleapp-yut/src
     steps:
       - checkout:
-          path: ~/sampleapp-yut
-      - ruby/install-deps
+          - run:
+          name: Which bundler?
+          command: bundle -v
+      - ruby/bundle-install
 
 
   test:
