@@ -6,14 +6,12 @@ orbs:
 jobs:
   build:
     docker:
-      - image: cimg/ruby:2.7-node
+      - image: cimg/ruby:2.7.6-node
     working_directory: ~/sampleapp-yut/src
     steps:
       - checkout:
-          - run:
-          name: Which bundler?
-          command: bundle -v
-      - ruby/bundle-install
+          path: ~/sampleapp-yut
+      - ruby/install-deps
 
 
   test:
