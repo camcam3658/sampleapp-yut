@@ -1,0 +1,94 @@
+version: 2.1
+orbs:
+  ruby: circleci/ruby@1.7.1
+  node: circleci/node@5.0.2
+
+
+
+jobs:
+  build:
+    docker:
+      - image: cimg/ruby:2.7-node
+    working_directory: ~/sampleapp-yut/src
+    steps:
+      - checkout:
+          path: ~/sampleapp-yut
+      - ruby/install-deps
+
+
+  test:
+    docker:
+      - image: cimg/ruby:2.7-node
+      - image: cimg/postgres:14.2
+        environment:
+          POSTGRES_PASSWORD: password
+          POSTGRES_DATABASE: myapp_test
+          POSTGRES_USER: postgres
+    environment:
+      BUNDLE_JOBS: "3"
+      BUNDLE_RETRY: "3"
+      MYAPP_DATABASE_HOST: "127.0.0.1"
+      RAILS_ENV: test
+    working_directory: ~/sampleapp-yut/src
+    steps:
+      - checkout:
+          path: ~/sampleapp-yut
+      - ruby/install-deps
+      - run:
+          name: yarn Install
+          command: yarn install
+      - run: bundle exec bin/webpack
+      - run: sudo apt-get update
+      - run: sudo apt-get install postgresql-client
+      - run: whoami
+      - run: bundle exec rake db:create
+      - run: bundle exec rake db:schema:load
+      - run:
+          name: Database setup
+          command: bundle exec rails db:migrate
+      - run:
+          name: test
+          command: bundle exec rake test
+
+  deploy:
+    docker:
+      - image: cimg/ruby:2.7-node
+        environment:
+          RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
+    working_directory: ~/rails-sampleapp-yut/src
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: 20.10.14
+      - heroku/install
+      - run:
+          name: heroku login
+          command: heroku container:login
+      - run:
+          name: export rails master key
+          command: |
+            export RAILS_MASTER_KEY=${RAILS_MASTER_KEY}
+      - run:
+          name: push docker image
+          command: heroku container:push web -a $HEROKU_APP_NAME
+      - run:
+          name: release docker image
+          command: heroku container:release web -a $HEROKU_APP_NAME
+      - run:
+          name: database setup
+          command: heroku run bundle exec rake db:migrate RAILS_ENV=production -a $HEROKU_APP_NAME
+
+workflows:
+  version: 2
+  build_test_and_deploy:
+    jobs:
+      - build
+      - test:
+          requires:
+            - build
+      - deploy:
+          requires:
+            - test
+          filters:
+            branches:
+              only: main
