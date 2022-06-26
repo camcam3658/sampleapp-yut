@@ -1,4 +1,4 @@
-FROM ruby:2.7
+FROM ruby:2.7.6
 
 ENV RAILS_ENV=production
 ENV RAILS_SERVE_STATIC_FILES=1
@@ -9,6 +9,7 @@ echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.lis
 RUN apt-get update -qq && apt-get install -y nodejs build-essential libpq-dev postgresql-client yarn
 WORKDIR /myapp
 COPY ./src /myapp
+RUN gem install bundler
 RUN bundle install
 
 RUN yarn install --check-files
