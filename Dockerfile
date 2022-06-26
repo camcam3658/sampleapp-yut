@@ -9,6 +9,8 @@ RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
   && apt-get install -y nodejs yarn
 WORKDIR /myapp
 COPY ./src /myapp
+COPY src/Gemfile /myapp/Gemfile
+COPY src/Gemfile.lock /myapp/Gemfile.lock
 RUN bundle config --local set path 'vendor/bundle' \
   && bundle install
 
